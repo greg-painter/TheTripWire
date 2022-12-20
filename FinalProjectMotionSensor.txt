@@ -1,0 +1,93 @@
+#include <msp430.h>
+
+#include <stdint.h>
+
+
+
+// Function prototypes
+
+void initPIR(void);
+
+uint8_t readPIR(void);
+
+
+
+int main(void)
+
+{
+
+    WDTCTL = WDTPW | WDTHOLD;   // Stop watchdog timer
+
+
+
+    // Initialize the PIR sensor
+
+    initPIR();
+
+
+
+    while (1)
+
+    {
+
+        // Read the PIR sensor's output
+
+        uint8_t motion = readPIR();
+
+
+
+        // If motion was detected, turn on the LED
+
+        if (motion)
+
+        {
+
+            P1OUT |= BIT0;   // Turn on LED
+
+        }
+
+        else
+
+        {
+
+            P1OUT &= ~BIT0;  // Turn off LED
+
+        }
+
+    }
+
+}
+
+
+
+// Initialize the PIR sensor
+
+void initPIR(void)
+
+{
+
+    // Set P1.1 as an input pin
+
+    P1DIR &= ~BIT1;
+
+
+
+    // Enable the pull-up resistor on P1.1
+
+    P1REN |= BIT1;
+
+    P1OUT |= BIT1;
+
+}
+
+
+
+// Read the PIR sensor's output
+
+uint8_t readPIR(void)
+
+{
+
+    return (P1IN & BIT1);
+
+}
