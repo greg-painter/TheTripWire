@@ -1,0 +1,44 @@
+#include <msp430.h>
+
+#define LIGHT_SENSOR_INPUT_PIN BIT5  // P1.5 is the input pin for the light sensor
+
+void main(void)
+{
+  WDTCTL = WDTPW + WDTHOLD;  // Stop watchdog timer
+
+  // Configure ADC12
+  ADC12CTL0 = ADC12SHT0_2 + ADC12ON;  // Set sample and hold time and turn on ADC12
+  ADC12CTL1 = ADC12SHP;  // Use sampling timer
+  ADC12CTL2 |= ADC12RES_2;  // 12-bit conversion results
+  ADC12MCTL0 = ADC12INCH_5;  // Use input channel 5 (P1.5) for the light sensor
+  ADC12IE = 0x01;  // Enable ADC12IFG.0
+  ADC12CTL0 |= ADC12ENC;  // Enable conversions
+
+  // Configure P1.5 as an input pin
+  P1DIR &= ~LIGHT_SENSOR_INPUT_PIN;  // Set P1.5 as an input pin
+  P1SEL0 |= LIGHT_SENSOR_INPUT_PIN;  // Select ADC function for P1.5
+
+  __bis_SR_register(GIE);  // Enable interrupts
+
+  // Start conversion
+  ADC12CTL0 |= ADC12SC;  // Start conversions
+
+  // Infinite loop
+  while(1)
+  {
+    // Wait for conversion to complete
+    __bis_SR_register(LPM0_bits + GIE);  // Enter LPM0 with interrupts enabled
+
+    // Read the ADC value
+    unsigned int light_sensor_value = ADC12MEM0;
+
+    // Do something with the light sensor value
+  }
+}
+
+// ADC12 interrupt service routine
+#pragma vector=ADC12_VECTOR
+__interrupt void ADC12ISR(void)
+{
+  __bic_SR_register_on_exit(LPM0_bits);  // Exit LPM0 on interrupt
+}
