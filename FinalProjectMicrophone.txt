@@ -1,93 +1,39 @@
-#include <msp430.h>
-
+#include <msp430fr2355.h>
+#include <driverlib.h>
 #include <stdint.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <jsmn.h>
 
+// Set up ADC registers
+ADC12CTL0 = ADC12SHT0_2 + ADC12ON; // Sampling time, ADC12 on
+ADC12CTL1 = ADC12SHP;             // Use sampling timer, pulse mode
+ADC12CTL3 = ADC12TCMAP;           // Enable internal reference
+ADC12MCTL0 = ADC12INCH_3;         // ADC input channel 3
 
+// Set up microphone input pin
+P4SEL1 |= BIT3;                   // Configure P4.3 for ADC
+P4SEL0 |= BIT3;
 
-// Function prototypes
+// Set up LED output pin
+P1DIR |= BIT0;                    // Set P1.0 to output direction
+P1OUT &= ~BIT0;                   // Clear LED
 
-void initPIR(void);
+while (1) {
+  // Read data from microphone
+  ADC12CTL0 |= ADC12ENC | ADC12SC; // Start conversion
+  while (!(ADC12IFG & BIT0));      // Wait for conversion to complete
+  uint16_t mic_data = ADC12MEM0;   // Read ADC value
 
-uint8_t readPIR(void);
+  // Convert data using ADC
+  float voltage = (float)mic_data * 3.3 / 4095.0;
 
-
-
-int main(void)
-
-{
-
-    WDTCTL = WDTPW | WDTHOLD;   // Stop watchdog timer
-
-
-
-    // Initialize the PIR sensor
-
-    initPIR();
-
-
-
-    while (1)
-
-    {
-
-        // Read the PIR sensor's output
-
-        uint8_t motion = readPIR();
-
-
-
-        // If motion was detected, turn on the LED
-
-        if (motion)
-
-        {
-
-            P1OUT |= BIT0;   // Turn on LED
-
-        }
-
-        else
-
-        {
-
-            P1OUT &= ~BIT0;  // Turn off LED
-
-        }
-
-    }
-
-}
-
-
-
-// Initialize the PIR sensor
-
-void initPIR(void)
-
-{
-
-    // Set P1.1 as an input pin
-
-    P1DIR &= ~BIT1;
-
-
-
-    // Enable the pull-up resistor on P1.1
-
-    P1REN |= BIT1;
-
-    P1OUT |= BIT1;
-
-}
-
-
-
-// Read the PIR sensor's output
-
-uint8_t readPIR(void)
-
-{
-
-    return (P1IN & BIT1);
-
+  // Do something with the converted data
+  if (voltage > 2.0) {
+    P1OUT |= BIT0;  // Turn on LED
+  } else {
+    P1OUT &= ~BIT0; // Turn off LED
+  }
 }
